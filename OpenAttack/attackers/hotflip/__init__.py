@@ -71,7 +71,7 @@ class HotFlipAttacker(ClassificationAttacker):
         counter = -1
         for word, pos in zip(x_orig, x_pos):
             counter += 1
-            if word in self.filter_words:
+            if word.lower() in self.filter_words:
                 continue
             neighbours = self.get_neighbours(word, pos)
             for neighbour in neighbours:

@@ -4,3 +4,6 @@ datasets
 tqdm
 transformers>=4.0.0
 torch>=1.5.1
+language_tool_python
+tensorflow_hub
+tensorflow

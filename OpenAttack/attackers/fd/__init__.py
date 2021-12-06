@@ -91,7 +91,7 @@ class FDAttacker(ClassificationAttacker):
                 iter_cnt += 1
                 if iter_cnt > 5 * len(sent):    # Failed to find a substitute word
                     return None
-                if sent[idx] in self.filter_words:
+                if sent[idx].lower() in self.filter_words:
                     continue
                 try:
                     reps = list(map(lambda x:x[0], self.substitute(sent[idx], None)))

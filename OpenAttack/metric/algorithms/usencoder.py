@@ -2,7 +2,8 @@ from .base import AttackMetric
 import numpy as np
 from ...tags import *
 from ...data_manager import DataManager
-
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'    
 ## TODO use a pytorch model instead
 
 class UniversalSentenceEncoder(AttackMetric):
@@ -24,9 +25,16 @@ class UniversalSentenceEncoder(AttackMetric):
         :Language: english
         
         """
-        
+    
+        import tensorflow as tf
         import tensorflow_hub as hub
-        
+        gpus = tf.config.experimental.list_physical_devices('GPU')
+        if gpus:
+            try:
+                for gpu in gpus:
+                    tf.config.experimental.set_memory_growth(gpu, True)
+            except RuntimeError as e:
+                print(e)
         self.embed = hub.load( DataManager.load("AttackAssist.UniversalSentenceEncoder") )
 
     def calc_score(self, sentA : str, sentB : str) -> float:

@@ -255,4 +255,47 @@ class AttackEval:
         return summary
     
     ## TODO generate adversarial samples
-    
+
+    def generate_adv(self, dataset: Iterable[Dict[str, Any]], total_len : Optional[int] = None, visualize : bool = False, progress_bar : bool = False, num_workers : int = 0, chunk_size : Optional[int] = None):
+        """
+        Args:
+            dataset: An iterable dataset.
+            total_len: Total length of dataset (will be used if dataset doesn't has a `__len__` attribute).
+            visualize: Display a pretty result for each data in the dataset.
+            progress_bar: Display a progress bar if `True`.
+            num_worers: The number of processes running the attack algorithm. Default: 0 (running on the main process).
+            chunk_size: Processing pool trunks size.
+
+        Returns:
+            A :py:class:`Datasets.Dataset` consists of adversarial samples.
+
+        """
+
+
+        if hasattr(dataset, "__len__"):
+            total_len = len(dataset)
+        
+        if progress_bar:
+            result_iterator = tqdm(self.ieval(dataset, num_workers, chunk_size), total=total_len)
+        else:
+            result_iterator = self.ieval(dataset, num_workers, chunk_size)
+
+        ret = {"x": [],  "y": [], "pred": [], "original": [], "info": []}
+        for i, res in enumerate(result_iterator):
+            if res["success"]:
+                x_adv = res["result"]
+                self.victim.set_context(res["data"], None)
+                try:
+                    preds = self.victim.get_pred([x_orig, x_adv])
+                finally:
+                    self.victim.clear_context()
+                y_orig = int(preds[0])
+                y_adv = int(preds[1])
+
+                ret["x"].append(x_adv)
+                ret["y"].append(y_orig)
+                ret["pred"].append(y_adv)
+                ret["original"].append(res["data"]["x"])
+                ret["info"].append(res)
+
+        return datasets.Dataset.from_dict(ret)    

@@ -109,12 +109,12 @@ class TextFoolerAttacker(ClassificationAttacker):
 
         words_perturb = []
         for idx, score in sorted(enumerate(import_scores), key=lambda x: x[1], reverse=True):
-            if score > self.import_score_threshold and x_orig[idx] not in self.filter_words:
+            if score > self.import_score_threshold and x_orig[idx].lower() not in self.filter_words:
                 words_perturb.append((idx, x_orig[idx], x_pos[idx]))
 
         synonym_words = [
             self.get_neighbours(word, pos)
-            if word not in self.filter_words
+            if word.lower() not in self.filter_words
             else []
             for idx, word, pos in words_perturb
         ]

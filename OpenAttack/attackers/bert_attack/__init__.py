@@ -127,7 +127,7 @@ class BERTAttacker(ClassificationAttacker):
                 return None
 
             tgt_word = words[top_index[0]]
-            if tgt_word in self.filter_words:
+            if tgt_word.lower() in self.filter_words:
                 continue
             if keys[top_index[0]][0] > max_length - 2:
                 continue
@@ -154,7 +154,7 @@ class BERTAttacker(ClassificationAttacker):
                 if '##' in substitute:
                     continue  # filter out sub-word
 
-                if substitute in self.filter_words:
+                if substitute.lower() in self.filter_words:
                     continue
                 # if substitute in self.w2i and tgt_word in self.w2i:
                 #     if self.cos_mat[self.w2i[substitute]][self.w2i[tgt_word]] < 0.4:

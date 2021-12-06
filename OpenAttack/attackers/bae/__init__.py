@@ -153,7 +153,7 @@ class BAEAttacker(ClassificationAttacker):
                 return None
 
             tgt_word = words[top_index[0]]
-            if tgt_word in self.filter_words:
+            if tgt_word.lower() in self.filter_words:
                 continue
 
             substitutes = word_predictions[keys[top_index[0]][0]:keys[top_index[0]][1]]  # L, k
@@ -190,7 +190,7 @@ class BAEAttacker(ClassificationAttacker):
                     continue  # filter out original word
                 if '##' in substitute:
                     continue  # filter out sub-word
-                if substitute in self.filter_words:
+                if substitute.lower() in self.filter_words:
                     continue
 
                 if self.sub_mode == 3:
@@ -279,6 +279,7 @@ class BAEAttacker(ClassificationAttacker):
     def _tokenize(self, seq, tokenizer):
         seq = seq.replace('\n', '').lower()
         words = seq.split(' ')
+        words = [w for w in words if len(w) > 0]
 
         sub_words = []
         keys = []

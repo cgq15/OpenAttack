@@ -21,7 +21,8 @@ class TransformersClassifier(Classifier):
             device : torch.device = None, 
             max_length : int = 128,
             batch_size : int = 8,
-            lang = None
+            lang = None,
+            transpose = False
         ):
         """
         Args:
@@ -36,7 +37,7 @@ class TransformersClassifier(Classifier):
         """
 
         self.model = model
-
+        self.transpose = transpose
         if lang is not None:
             self.__lang_tag = language_by_name(lang)
         else:
@@ -123,9 +124,11 @@ class TransformersClassifier(Classifier):
 
             xs = torch.from_numpy(curr_sen).long().to(self.device)
             masks = torch.from_numpy(curr_mask).long().to(self.device)
+
             outputs = self.model(input_ids = xs,attention_mask = masks, output_hidden_states=True, labels=labels[ i * self.batch_size: (i + 1) * self.batch_size ])
             if i == 0:
                 all_hidden_states = outputs.hidden_states[-1].detach().cpu()
+                
                 loss = outputs.loss
                 logits = outputs.logits
                 logits = torch.nn.functional.softmax(logits,dim=-1)
@@ -133,18 +136,24 @@ class TransformersClassifier(Classifier):
                 loss.backward()
                 
                 result_grad = self.curr_embedding.grad.clone().cpu()
+                if self.transpose:
+                    result_grad = result_grad.permute(1,0,2)
                 self.curr_embedding.grad.zero_()
                 self.curr_embedding = None
                 result = logits.detach().cpu()
             else:
-                all_hidden_states = torch.cat((all_hidden_states, outputs.hidden_states[-1].detach().cpu()), dim=0)
+                output_hidden_state = outputs.hidden_states[-1].detach().cpu()
+                
+                all_hidden_states = torch.cat((all_hidden_states, output_hidden_state), dim=0)
                 loss = outputs.loss
                 logits = outputs.logits
                 logits = torch.nn.functional.softmax(logits,dim=-1)
                 loss = - loss
                 loss.backward()
-                
-                result_grad = torch.cat((result_grad, self.curr_embedding.grad.clone().cpu()), dim=0) 
+                cur_grad = self.curr_embedding.grad.clone().cpu()
+                if self.transpose:
+                    cur_grad = cur_grad.permute(1,0,2)
+                result_grad = torch.cat((result_grad, cur_grad), dim=0) 
                 self.curr_embedding.grad.zero_()
                 self.curr_embedding = None
 

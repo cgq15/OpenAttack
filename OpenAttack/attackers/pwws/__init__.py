@@ -86,7 +86,7 @@ class PWWSAttacker(ClassificationAttacker):
         ret_sent = x_orig.copy()
         for i in range(len(H)):
             idx, wd, _ = H[i]
-            if ret_sent[idx] in self.filter_words:
+            if ret_sent[idx].lower() in self.filter_words:
                 continue
             ret_sent[idx] = wd
             

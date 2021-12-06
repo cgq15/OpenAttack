@@ -81,12 +81,12 @@ class PSOAttacker(ClassificationAttacker):
 
         x_len = len(x_orig)
         neighbours_nums = [
-            min(self.get_neighbour_num(word, pos),10) if word not in self.filter_words else 0
+            min(self.get_neighbour_num(word, pos),10) if word.lower() not in self.filter_words else 0
             for word, pos in zip(x_orig, x_pos)
         ]
         neighbours = [
             self.get_neighbours(word, pos)
-            if word not in self.filter_words
+            if word.lower() not in self.filter_words
             else []
             for word, pos in zip(x_orig, x_pos)
         ]

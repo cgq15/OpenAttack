@@ -18,7 +18,7 @@ class UATAttacker(ClassificationAttacker):
             lang = None
         ):
         """
-        Universal Adversarial Triggers for Attacking and Analyzing NLP. Eric Wallace, Shi Feng, Nikhil Kandpal, Matt Gardner, Sameer Singh. EMNLP-IJCNLP 2019. 
+        Universal Adversarial Triggers for Attacking and Analyzing NLP. Eric Wallace, Shi Feng, Nikhil Kandpal, Matt Gardner, Sameer Singh. EMNLP-IJCNLP 2019.
         `[pdf] <https://arxiv.org/pdf/1908.07125.pdf>`__
         `[code] <https://github.com/Eric-Wallace/universal-triggers>`__
 
@@ -30,28 +30,25 @@ class UATAttacker(ClassificationAttacker):
         :Classifier Capacity:
             * get_pred
 
-        
+
         """
         lst = []
         if tokenizer is not None:
             lst.append(tokenizer)
-        
-        if len(lst) > 0:
-            self.__lang_tag = get_language(lst)
-        else:
-            self.__lang_tag = language_by_name(lang)
-            if self.__lang_tag is None:
-                raise ValueError("Unknown language `%s`" % lang)
+
+        self.__lang_tag = language_by_name(lang)
+        if self.__lang_tag is None:
+            raise ValueError("Unknown language `%s`" % lang)
 
         if tokenizer is None:
             tokenizer = get_default_tokenizer(self.__lang_tag)
         self.tokenizer = tokenizer
 
-        check_language([self.tokenizer], self.__lang_tag)
+        # check_language([self.tokenizer], self.__lang_tag)
 
         self.triggers = triggers
 
-    
+
     def attack(self, victim: Classifier, sentence : str, goal : ClassifierGoal):
         trigger_sent = self.tokenizer.detokenize( self.triggers + self.tokenizer.tokenize(sentence, pos_tagging=False) )
         pred = victim.get_pred([trigger_sent])[0]
@@ -59,11 +56,10 @@ class UATAttacker(ClassificationAttacker):
             return trigger_sent
         return None
 
-        
     @classmethod
     def get_triggers(self,
-            victim : Classifier, 
-            dataset : datasets.Dataset, 
+            victim : Classifier,
+            dataset : datasets.Dataset,
             tokenizer : Tokenizer,
             epoch : int = 5,
             batch_size : int = 5,
@@ -73,7 +69,7 @@ class UATAttacker(ClassificationAttacker):
         ) -> List[str]:
         """
         This method is used to get trigger words of vicim model on dataset.
-        
+
         Args:
             victim: The classifier that you want to attack.
             dataset: A `datsets.Dataset`.
@@ -92,8 +88,8 @@ class UATAttacker(ClassificationAttacker):
         for tag in requires:
             if tag not in victim.TAGS:
                 raise AttributeError("`%s` requires victim to support `%s`" % (self.__class__.__name__, tag.name))
-        
-        if tokenizer is not None:
+
+        if tokenizer is None:
             lang_tag = language_by_name(lang)
             if lang_tag is None:
                 raise ValueError("Invalid language type `%s`" % lang)
@@ -107,10 +103,10 @@ class UATAttacker(ClassificationAttacker):
 
         id2word = { v: k for k, v in word2id.items() }
 
-        def get_candidates(gradient):
-            idx = embedding.dot( gradient.T ).argsort()[:beam_size].tolist()
+        def get_candidates(gradient, previous_word_id):
+            idx = (embedding - embedding[previous_word_id]).dot( gradient.T ).argsort()[:beam_size].tolist()
             return [ id2word[id_] for id_ in idx]
-        
+
         curr_trigger = ["the" for _ in range(trigger_len)]
         for epoch_idx in range(epoch):
             for num_iter in tqdm( range( (len(dataset) + batch_size - 1) // batch_size ), desc="Epoch %d: " % epoch_idx ):
@@ -131,7 +127,8 @@ class UATAttacker(ClassificationAttacker):
                     for trigger, _ in beams:
                         xt = list(map(lambda x: trigger + x, x))
                         grad = victim.get_grad(xt, y)[1]
-                        candidates_words = get_candidates(grad[:, i, :].mean(axis=0))
+                        candidates_words = get_candidates(grad[:, i, :].mean(axis=0),
+                                                          tokenizer.convert_tokens_to_ids(trigger)[i])
 
                         for cw in candidates_words:
                             tt = trigger[:i] + [cw] + trigger[i + 1:]
@@ -142,4 +139,4 @@ class UATAttacker(ClassificationAttacker):
                     nw_beams = sorted(nw_beams, key=lambda x: x[1])[:beam_size]
                 curr_trigger = nw_beams[0][0]
         return curr_trigger
-                        
+
